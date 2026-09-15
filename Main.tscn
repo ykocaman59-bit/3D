@@ -44,7 +44,7 @@ offset_bottom=65.0
 text="Süre: 90"
 theme_override_font_sizes/font_size=20
 
-[node name="Mobile"
+[node name="Mobile" type="Control" parent="."]
 script=ExtResource("2")
 [node name="Controls" type="Control" parent="Mobile"]
 layout_mode=3
@@ -375,7 +375,7 @@ mesh=SubResource("B")
 scale=Vector3(2.5,3,0.5)
 shape=SubResource("S")
 [node name="Garden" type="MeshInstance3D" parent="House"]
-position=Vector3(0,-0.02,-16)
+position=Vector3(0,-.02,-16)
 scale=Vector3(34,.2,10)
 mesh=SubResource("B")
 
