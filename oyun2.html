@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Test Ekranı</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #111122; color: white; font-family: sans-serif; text-align: center; }
+        #msg { position: absolute; top: 40%; width: 100%; font-size: 20px; }
+    </style>
+</head>
+<body>
+    <div id="msg">BURASI TEST EKRANI<br>Eğer burası gri/lacivertse önbellek sorunu çözüldü demektir!<br>Ekranı kaydırarak etrafa bakabilirsin.</div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x111122);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 2, 5);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const light = new THREE.AmbientLight(0xffffff, 1);
+        scene.add(light);
+
+        // Büyük gri зemin
+        const plane = new THREE.Mesh(
+            new THREE.PlaneGeometry(50, 50),
+            new THREE.MeshStandardMaterial({ color: 0x555555 })
+        );
+        plane.rotation.x = -Math.PI / 2;
+        scene.add(plane);
+
+        let isDragging = false, prevX = 0, lon = 0, lat = 0;
+        window.addEventListener('touchstart', e => { isDragging = true; prevX = e.touches[0].clientX; });
+        window.addEventListener('touchmove', e => {
+            if (!isDragging) return;
+            lon -= (e.touches[0].clientX - prevX) * 0.5;
+            prevX = e.touches[0].clientX;
+            let phi = THREE.MathUtils.degToRad(90 - lat);
+            let theta = THREE.MathUtils.degToRad(lon);
+            camera.lookAt(new THREE.Vector3(100*Math.sin(phi)*Math.cos(theta), 2+100*Math.cos(phi), 100*Math.sin(phi)*Math.sin(theta)));
+        });
+        window.addEventListener('touchend', () => isDragging = false);
+
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+</body>
+</html>
