@@ -3,128 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>3D Saklambaç Haritası - Gezinti</title>
+    <title>3D Saklambaç Haritası</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
-            background-color: #111;
+            background-color: #000;
             font-family: Arial, sans-serif;
             touch-action: none;
         }
         #info {
             position: absolute;
-            top: 15px;
+            top: 20px;
             width: 100%;
             text-align: center;
-            color: white;
-            font-size: 15px;
-            pointer-events: none;
-            text-shadow: 1px 1px 3px black;
+            color: #fff;
+            font-size: 16px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px #000;
             z-index: 10;
         }
     </style>
 </head>
 <body>
-    <div id="info">Oyun Topluluğu - Harita Gezintisi<br>Parmağınla ekranda kaydırarak etrafa bak</div>
+    <div id="info">Oyun Topluluğu - 3D Harita<br>Ekranı kaydırarak etrafa bak</div>
 
+    <!-- Three.js Kütüphanesi -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
     <script>
-        let scene, camera, renderer;
+        // Sahne, Kamera, Renderer
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x111122); // Lacivert gökyüzü
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 3, 10); // Kamerayı dışarıya konumlandırdık
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Işıklar
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+        scene.add(ambientLight);
+
+        // Zemin
+        const floorGeo = new THREE.PlaneGeometry(40, 40);
+        const floorMat = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.8 });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        scene.add(floor);
+
+        // Harita Odaları (Farklı renklerde kutular)
+        function addBox(x, z, w, d, color, name) {
+            const geom = new THREE.BoxGeometry(w, 3, d);
+            const mat = new THREE.MeshStandardMaterial({ color: color });
+            const mesh = new THREE.Mesh(geom, mat);
+            mesh.position.set(x, 1.5, z);
+            scene.add(mesh);
+        }
+
+        // Odaları yerleştiriyoruz (Kameranın önünü kapatmayacak şekilde etrafa)
+        addBox(-6, -6, 4, 4, 0xff5555, "Mutfak (Kırmızı)");
+        addBox(6, -6, 4, 4, 0x5555ff, "Yatak Odası (Mavi)");
+        addBox(-6, 6, 4, 4, 0xffaa00, "Oturma Odası (Turuncu)");
+        addBox(6, 6, 4, 4, 0xaa00aa, "Garaj (Mor)");
+
+        // Dokunmatik Kontrol Değişkenleri
+        let isDragging = false;
+        let previousX = 0, previousY = 0;
         let lon = 0, lat = 0;
-        let touchX = 0, touchY = 0;
-        let isTouching = false;
 
-        function init() {
-            // Sahne ve Kamera
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x1a1a2e);
+        window.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) {
+                isDragging = true;
+                previousX = e.touches[0].clientX;
+                previousY = e.touches[0].clientY;
+            }
+        });
 
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 2, 8); // Kamerayı odaların dışına, güvenli bir noktaya koyduk
+        window.addEventListener('touchmove', (e) => {
+            if (!isDragging || e.touches.length !== 1) return;
 
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            document.body.appendChild(renderer.domElement);
+            let deltaX = e.touches[0].clientX - previousX;
+            let deltaY = e.touches[0].clientY - previousY;
 
-            // Işıklar
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-            scene.add(ambientLight);
+            lon -= deltaX * 0.5;
+            lat += deltaY * 0.5;
+            lat = Math.max(-85, Math.min(85, lat));
 
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
-            dirLight.position.set(10, 20, 10);
-            scene.add(dirLight);
+            previousX = e.touches[0].clientX;
+            previousY = e.touches[0].clientY;
 
-            // Zemin (Büyük Oyun Alanı)
-            const floorGeo = new THREE.PlaneGeometry(30, 30);
-            const floorMat = new THREE.MeshStandardMaterial({ color: 0x2b2b2b, roughness: 0.9 });
-            const floor = new THREE.Mesh(floorGeo, floorMat);
-            floor.rotation.x = -Math.PI / 2;
-            scene.add(floor);
+            updateCamera();
+        });
 
-            // Harita Odaları (Etrafta konumlandırıldı, kamerayı kapatmaz)
-            createRoom(-5, 0, -4, 4, 3, 0x3498db, "Mutfak");   // Mavi
-            createRoom(5, 0, -4, 4, 3, 0xe74c3c, "Yatak Odası"); // Kırmızı
-            createRoom(0, 0, -8, 5, 3, 0xf1c40f, "Oturma Odası");// Sarı
-            createRoom(0, 0, 4, 6, 3, 0x2ecc71, "Bahçe");      // Yeşil (artık ileride)
+        window.addEventListener('touchend', () => { isDragging = false; });
 
-            // Dokunmatik Kontroller (Mobil Uyumlu)
-            document.addEventListener('touchstart', (e) => {
-                if (e.touches.length === 1) {
-                    isTouching = true;
-                    touchX = e.touches[0].clientX;
-                    touchY = e.touches[0].clientY;
-                }
-            }, { passive: false });
+        // Fare Desteği (Bilgisayardan test etmek istersen)
+        window.addEventListener('mousedown', (e) => { isDragging = true; previousX = e.clientX; previousY = e.clientY; });
+        window.addEventListener('mouseup', () => { isDragging = false; });
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            let deltaX = e.clientX - previousX;
+            let deltaY = e.clientY - previousY;
+            lon -= deltaX * 0.5;
+            lat += deltaY * 0.5;
+            lat = Math.max(-85, Math.min(85, lat));
+            previousX = e.clientX;
+            previousY = e.clientY;
+            updateCamera();
+        });
 
-            document.addEventListener('touchmove', (e) => {
-                if (!isTouching || e.touches.length !== 1) return;
-
-                let deltaX = e.touches[0].clientX - touchX;
-                let deltaY = e.touches[0].clientY - touchY;
-
-                lon -= deltaX * 0.4;
-                lat += deltaY * 0.4;
-                lat = Math.max(-85, Math.min(85, lat));
-
-                touchX = e.touches[0].clientX;
-                touchY = e.touches[0].clientY;
-
-                updateCameraRotation();
-            }, { passive: false });
-
-            document.addEventListener('touchend', () => { isTouching = false; });
-
-            // Bilgisayar Mouse Desteği (Test için)
-            let isMouseDown = false;
-            document.addEventListener('mousedown', (e) => { isMouseDown = true; touchX = e.clientX; touchY = e.clientY; });
-            document.addEventListener('mouseup', () => { isMouseDown = false; });
-            document.addEventListener('mousemove', (e) => {
-                if (!isMouseDown) return;
-                let deltaX = e.clientX - touchX;
-                let deltaY = e.clientY - touchY;
-                lon -= deltaX * 0.4;
-                lat += deltaY * 0.4;
-                lat = Math.max(-85, Math.min(85, lat));
-                touchX = e.clientX;
-                touchY = e.clientY;
-                updateCameraRotation();
-            });
-
-            window.addEventListener('resize', onWindowResize);
-            updateCameraRotation();
-        }
-
-        function createRoom(x, y, z, width, depth, colorHex, name) {
-            const geometry = new THREE.BoxGeometry(width, 2.5, depth);
-            const material = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.4 });
-            const room = new THREE.Mesh(geometry, material);
-            room.position.set(x, y + 1.25, z);
-            scene.add(room);
-        }
-
-        function updateCameraRotation() {
+        function updateCamera() {
             let phi = THREE.MathUtils.degToRad(90 - lat);
             let theta = THREE.MathUtils.degToRad(lon);
 
@@ -136,19 +127,21 @@
             camera.lookAt(target);
         }
 
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
+        updateCamera();
 
+        // Döngü
         function animate() {
             requestAnimationFrame(animate);
             renderer.render(scene, camera);
         }
-
-        init();
         animate();
+
+        // Ekran Boyutu Değişimi
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
     </script>
 </body>
 </html>
