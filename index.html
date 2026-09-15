@@ -5,74 +5,91 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Oyun Topluluğu - Saklambaç Haritası</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #0b0f19; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { margin: 0; overflow: hidden; background-color: #050811; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         
-        /* Arka Plan Görseli / Oda Sahnesi */
+        /* Oda Arka Plan Görseli */
         #game-screen {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1000&auto=format&fit=crop') no-repeat center center;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1200&auto=format&fit=crop') no-repeat center center;
             background-size: cover;
+            transition: background-image 0.3s ease-in-out;
         }
 
-        /* Üst Bilgi Barı */
+        /* Üst Bar (Saklanma Sayacı ve Süre) */
         #top-bar {
-            position: absolute; top: 15px; left: 20px; right: 20px;
+            position: absolute; top: 15px; left: 15px; right: 15px;
             display: flex; justify-content: space-between; align-items: center;
-            z-index: 20; pointer-events: none;
+            z-index: 30; pointer-events: none;
         }
         .badge {
-            background: rgba(0, 0, 0, 0.6); color: white; padding: 6px 14px;
-            border-radius: 20px; font-size: 13px; font-weight: bold; border: 1px solid rgba(255,255,255,0.3);
+            background: rgba(0, 0, 0, 0.65); color: white; padding: 7px 15px;
+            border-radius: 20px; font-size: 13px; font-weight: bold; border: 1px solid rgba(255,255,255,0.25);
         }
-        .timer { background: rgba(0, 0, 0, 0.7); color: #fbbf24; }
+        .timer { background: rgba(0, 0, 0, 0.75); color: #fbbf24; }
 
-        /* Oda İsmi Göstergesi */
-        #room-title {
-            position: absolute; bottom: 110px; left: 30px;
-            background: rgba(0, 0, 0, 0.7); color: white; padding: 8px 18px;
-            border-radius: 8px; font-size: 16px; font-weight: bold; z-index: 20;
+        /* Harita Butonu (Sağ Üst) */
+        #map-btn {
+            position: absolute; top: 70px; right: 15px;
+            background: #1e293b; color: white; border: 2px solid white;
+            padding: 8px 14px; border-radius: 12px; font-size: 13px; font-weight: bold;
+            cursor: pointer; z-index: 30; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        /* Aktif Oda İsmi (Sol Alt Üstü) */
+        #room-indicator {
+            position: absolute; bottom: 120px; left: 25px;
+            background: rgba(0, 0, 0, 0.7); color: white; padding: 6px 16px;
+            border-radius: 8px; font-size: 15px; font-weight: bold; z-index: 30;
             border-left: 4px solid #3b82f6;
         }
 
-        /* Sol Alt Joystick (Görsel Tasarım) */
+        /* Sol Alt Joystick */
         #joystick-area {
-            position: absolute; bottom: 30px; left: 30px; width: 130px; height: 130px;
-            background: rgba(255, 255, 255, 0.12); border-radius: 50%;
-            border: 2px solid rgba(255, 255, 255, 0.4); z-index: 20;
-            touch-action: none;
+            position: absolute; bottom: 25px; left: 25px; width: 120px; height: 120px;
+            background: rgba(255, 255, 255, 0.1); border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.3); z-index: 30; touch-action: none;
         }
         #stick {
-            position: absolute; top: 40px; left: 40px; width: 50px; height: 50px;
-            background: rgba(255, 255, 255, 0.9); border-radius: 50%;
+            position: absolute; top: 35px; left: 35px; width: 50px; height: 50px;
+            background: rgba(255, 255, 255, 0.85); border-radius: 50%;
             box-shadow: 0 4px 10px rgba(0,0,0,0.5); pointer-events: none;
             transition: transform 0.05s ease-out;
         }
 
-        /* Sağ Alt Aksiyon Tuşları (Objeye Dönüş / Menü) */
+        /* Sağ Alt Aksiyon Tuşları (Objeye Dönüş / Karakter) */
         #right-buttons {
-            position: absolute; bottom: 30px; right: 30px;
-            display: flex; flex-direction: column; gap: 15px; z-index: 20;
+            position: absolute; bottom: 25px; right: 25px;
+            display: flex; flex-direction: column; gap: 12px; z-index: 30;
         }
         .action-btn {
-            width: 65px; height: 65px; background: #3b82f6; border-radius: 50%;
-            border: 3px solid white; color: white; font-size: 24px;
+            width: 60px; height: 60px; background: #3b82f6; border-radius: 50%;
+            border: 3px solid white; color: white; font-size: 22px;
             display: flex; align-items: center; justify-content: center;
             box-shadow: 0 4px 10px rgba(0,0,0,0.4); cursor: pointer;
         }
-        .action-btn.secondary { background: #1e293b; font-size: 20px; }
+        .action-btn.secondary { background: #1e293b; }
 
-        /* Oda Seçim Menüsü (Üst Sağ / Alt Panel Alternatifi) */
-        #room-selector {
-            position: absolute; top: 70px; right: 20px;
-            background: rgba(15, 23, 42, 0.85); padding: 10px; border-radius: 12px;
-            z-index: 20; border: 1px solid rgba(255,255,255,0.2); max-height: 250px; overflow-y: auto;
+        /* Harita Seçim Ekranı (Modal) */
+        #map-modal {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(11, 15, 25, 0.95); z-index: 50; display: flex;
+            flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;
         }
-        .room-opt {
-            color: white; padding: 6px 12px; font-size: 13px; cursor: pointer;
-            border-bottom: 1px solid rgba(255,255,255,0.1); text-align: left;
+        #map-modal h2 { color: white; margin-bottom: 15px; font-size: 20px; text-align: center; }
+        .room-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+            width: 100%; max-width: 400px; max-height: 70vh; overflow-y: auto; padding-right: 5px;
         }
-        .room-opt:hover { background: #3b82f6; border-radius: 6px; }
+        .room-card {
+            background: #1e293b; color: white; padding: 12px; border-radius: 10px;
+            text-align: center; font-size: 14px; font-weight: bold; cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        .room-card:active { background: #3b82f6; }
+        #close-map {
+            margin-top: 15px; background: #ef4444; color: white; border: none;
+            padding: 10px 25px; border-radius: 8px; font-weight: bold; cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -83,22 +100,13 @@
     <div id="top-bar">
         <div class="badge">👤 Saklan: 16/16</div>
         <div class="badge timer">⏱️ 03:00</div>
-        <div class="badge" onclick="toggleMenu()" style="cursor:pointer;">🏠 Odalar</div>
     </div>
 
-    <!-- Oda Değiştirme Menüsü -->
-    <div id="room-selector" style="display:none;">
-        <div class="room-opt" onclick="changeRoom('Giriş Holü', 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1000&auto=format&fit=crop')">Giriş Holü</div>
-        <div class="room-opt" onclick="changeRoom('Mutfak', 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=1000&auto=format&fit=crop')">Mutfak</div>
-        <div class="room-opt" onclick="changeRoom('Oturma Odası', 'https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?q=80&w=1000&auto=format&fit=crop')">Oturma Odası</div>
-        <div class="room-opt" onclick="changeRoom('Yatak Odası', 'https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?q=80&w=1000&auto=format&fit=crop')">Yatak Odası</div>
-        <div class="room-opt" onclick="changeRoom('Banyo', 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=1000&auto=format&fit=crop')">Banyo</div>
-        <div class="room-opt" onclick="changeRoom('Garaj', 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?q=80&w=1000&auto=format&fit=crop')">Garaj</div>
-        <div class="room-opt" onclick="changeRoom('Bahçe / Kamelya', 'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?q=80&w=1000&auto=format&fit=crop')">Bahçe / Kamelya</div>
-    </div>
+    <!-- Harita Açma Butonu -->
+    <div id="map-btn" onclick="toggleMap(true)">🗺️ Harita</div>
 
-    <!-- Aktif Oda İsmi -->
-    <div id="room-title">Giriş Holü</div>
+    <!-- Aktif Oda Göstergesi -->
+    <div id="room-indicator">Giriş Holü</div>
 
     <!-- Sol Alt Joystick -->
     <div id="joystick-area">
@@ -107,24 +115,49 @@
 
     <!-- Sağ Alt Butonlar -->
     <div id="right-buttons">
-        <div class="action-btn secondary" onclick="alert('Objeye dönüşme aktif!')">📦</div>
-        <div class="action-btn" onclick="alert('Aksiyon / Etkileşim!')">✨</div>
+        <div class="action-btn secondary" onclick="transformObject()">📦</div>
+        <div class="action-btn" onclick="interactAction()">✨</div>
+    </div>
+
+    <!-- Harita / Oda Seçim Paneli -->
+    <div id="map-modal">
+        <h2>Oyun Topluluğu - Harita Seçimi</h2>
+        <div class="room-grid">
+            <div class="room-card" onclick="selectRoom('Giriş Holü', 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1200&auto=format&fit=crop')">Giriş Holü</div>
+            <div class="room-card" onclick="selectRoom('Mutfak', 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=1200&auto=format&fit=crop')">Mutfak</div>
+            <div class="room-card" onclick="selectRoom('Oturma Odası', 'https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?q=80&w=1200&auto=format&fit=crop')">Oturma Odası</div>
+            <div class="room-card" onclick="selectRoom('Yatak Odası', 'https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?q=80&w=1200&auto=format&fit=crop')">Yatak Odası</div>
+            <div class="room-card" onclick="selectRoom('Banyo', 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=1200&auto=format&fit=crop')">Banyo</div>
+            <div class="room-card" onclick="selectRoom('Yemek Odası', 'https://images.unsplash.com/photo-1615529162924-f8605388461d?q=80&w=1200&auto=format&fit=crop')">Yemek Odası</div>
+            <div class="room-card" onclick="selectRoom('Merdiven', 'https://images.unsplash.com/photo-1513694203232-719a280e022f?q=80&w=1200&auto=format&fit=crop')">Merdiven</div>
+            <div class="room-card" onclick="selectRoom('Çalışma Odası', 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?q=80&w=1200&auto=format&fit=crop')">Çalışma Odası</div>
+            <div class="room-card" onclick="selectRoom('Garaj', 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?q=80&w=1200&auto=format&fit=crop')">Garaj</div>
+            <div class="room-card" onclick="selectRoom('Bahçe / Kamelya', 'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?q=80&w=1200&auto=format&fit=crop')">Bahçe / Kamelya</div>
+        </div>
+        <button id="close-map" onclick="toggleMap(false)">Oyuna Dön</button>
     </div>
 
     <script>
-        // Oda Değiştirme Fonksiyonu
-        function changeRoom(name, imageUrl) {
-            document.getElementById('room-title').innerText = name;
+        // Harita / Oda Değiştirme Mantığı
+        function selectRoom(roomName, imageUrl) {
+            document.getElementById('room-indicator').innerText = roomName;
             document.getElementById('game-screen').style.backgroundImage = `url('${imageUrl}')`;
-            document.getElementById('room-selector').style.display = 'none';
+            toggleMap(false);
         }
 
-        function toggleMenu() {
-            const menu = document.getElementById('room-selector');
-            menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+        function toggleMap(show) {
+            document.getElementById('map-modal').style.display = show ? 'flex' : 'none';
         }
 
-        // Joystick Dokunma ve Hareket Efekti
+        function transformObject() {
+            alert('📦 Dönüşüm tamamlandı! Oyuncu objeye dönüştü.');
+        }
+
+        function interactAction() {
+            alert('✨ Etkileşim gerçekleştirildi!');
+        }
+
+        // Sol Alt Joystick Dokunma Efekti
         const joystickArea = document.getElementById('joystick-area');
         const stick = document.getElementById('stick');
         let isTouching = false;
@@ -150,7 +183,6 @@
                 dx = (dx / dist) * maxDist;
                 dy = (dy / dist) * maxDist;
             }
-
             stick.style.transform = `translate(${dx}px, ${dy}px)`;
         });
 
