@@ -5,191 +5,257 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Oyun Topluluğu - Saklambaç Haritası</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #050811; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { margin: 0; overflow: hidden; background-color: #0b0f19; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; touch-action: none; }
         
-        /* Oda Arka Plan Görseli */
-        #game-screen {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1200&auto=format&fit=crop') no-repeat center center;
-            background-size: cover;
-            transition: background-image 0.3s ease-in-out;
-        }
-
-        /* Üst Bar (Saklanma Sayacı ve Süre) */
-        #top-bar {
-            position: absolute; top: 15px; left: 15px; right: 15px;
-            display: flex; justify-content: space-between; align-items: center;
-            z-index: 30; pointer-events: none;
-        }
-        .badge {
-            background: rgba(0, 0, 0, 0.65); color: white; padding: 7px 15px;
-            border-radius: 20px; font-size: 13px; font-weight: bold; border: 1px solid rgba(255,255,255,0.25);
-        }
-        .timer { background: rgba(0, 0, 0, 0.75); color: #fbbf24; }
-
-        /* Harita Butonu (Sağ Üst) */
-        #map-btn {
-            position: absolute; top: 70px; right: 15px;
-            background: #1e293b; color: white; border: 2px solid white;
-            padding: 8px 14px; border-radius: 12px; font-size: 13px; font-weight: bold;
-            cursor: pointer; z-index: 30; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-        }
-
-        /* Aktif Oda İsmi (Sol Alt Üstü) */
-        #room-indicator {
-            position: absolute; bottom: 120px; left: 25px;
-            background: rgba(0, 0, 0, 0.7); color: white; padding: 6px 16px;
-            border-radius: 8px; font-size: 15px; font-weight: bold; z-index: 30;
-            border-left: 4px solid #3b82f6;
-        }
+        /* Üst Bar */
+        #top-bar { position: absolute; top: 15px; left: 20px; right: 20px; display: flex; justify-content: space-between; align-items: center; z-index: 20; pointer-events: none; }
+        .badge { background: rgba(0, 0, 0, 0.7); color: white; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: bold; border: 1px solid rgba(255,255,255,0.3); }
+        .timer { color: #fbbf24; }
 
         /* Sol Alt Joystick */
-        #joystick-area {
-            position: absolute; bottom: 25px; left: 25px; width: 120px; height: 120px;
-            background: rgba(255, 255, 255, 0.1); border-radius: 50%;
-            border: 2px solid rgba(255, 255, 255, 0.3); z-index: 30; touch-action: none;
-        }
-        #stick {
-            position: absolute; top: 35px; left: 35px; width: 50px; height: 50px;
-            background: rgba(255, 255, 255, 0.85); border-radius: 50%;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5); pointer-events: none;
-            transition: transform 0.05s ease-out;
-        }
+        #joystick-area { position: absolute; bottom: 35px; left: 35px; width: 130px; height: 130px; background: rgba(255, 255, 255, 0.15); border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.4); z-index: 20; touch-action: none; }
+        #stick { position: absolute; top: 40px; left: 40px; width: 50px; height: 50px; background: rgba(255, 255, 255, 0.9); border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.5); pointer-events: none; }
 
-        /* Sağ Alt Aksiyon Tuşları (Objeye Dönüş / Karakter) */
-        #right-buttons {
-            position: absolute; bottom: 25px; right: 25px;
-            display: flex; flex-direction: column; gap: 12px; z-index: 30;
-        }
-        .action-btn {
-            width: 60px; height: 60px; background: #3b82f6; border-radius: 50%;
-            border: 3px solid white; color: white; font-size: 22px;
-            display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.4); cursor: pointer;
-        }
-        .action-btn.secondary { background: #1e293b; }
+        /* Sağ Alt Aksiyon Tuşları */
+        #right-buttons { position: absolute; bottom: 35px; right: 35px; display: flex; flex-direction: column; gap: 15px; z-index: 20; }
+        .action-btn { width: 65px; height: 65px; background: #3b82f6; border-radius: 50%; border: 3px solid white; color: white; font-size: 24px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.4); cursor: pointer; }
+        .action-btn.secondary { background: #1e293b; font-size: 20px; }
 
-        /* Harita Seçim Ekranı (Modal) */
-        #map-modal {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(11, 15, 25, 0.95); z-index: 50; display: flex;
-            flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;
-        }
-        #map-modal h2 { color: white; margin-bottom: 15px; font-size: 20px; text-align: center; }
-        .room-grid {
-            display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
-            width: 100%; max-width: 400px; max-height: 70vh; overflow-y: auto; padding-right: 5px;
-        }
-        .room-card {
-            background: #1e293b; color: white; padding: 12px; border-radius: 10px;
-            text-align: center; font-size: 14px; font-weight: bold; cursor: pointer;
-            border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-        }
-        .room-card:active { background: #3b82f6; }
-        #close-map {
-            margin-top: 15px; background: #ef4444; color: white; border: none;
-            padding: 10px 25px; border-radius: 8px; font-weight: bold; cursor: pointer;
-        }
+        #info-text { position: absolute; top: 65px; width: 100%; text-align: center; color: #94a3b8; font-size: 12px; z-index: 20; pointer-events: none; }
     </style>
 </head>
 <body>
 
-    <div id="game-screen"></div>
-
-    <!-- Üst Bar -->
     <div id="top-bar">
         <div class="badge">👤 Saklan: 16/16</div>
         <div class="badge timer">⏱️ 03:00</div>
     </div>
+    <div id="info-text">Sol alttaki joystick ile karakteri hareket ettir, sağ ekrana dokunarak etrafa bak!</div>
 
-    <!-- Harita Açma Butonu -->
-    <div id="map-btn" onclick="toggleMap(true)">🗺️ Harita</div>
-
-    <!-- Aktif Oda Göstergesi -->
-    <div id="room-indicator">Giriş Holü</div>
-
-    <!-- Sol Alt Joystick -->
     <div id="joystick-area">
         <div id="stick"></div>
     </div>
 
-    <!-- Sağ Alt Butonlar -->
     <div id="right-buttons">
-        <div class="action-btn secondary" onclick="transformObject()">📦</div>
-        <div class="action-btn" onclick="interactAction()">✨</div>
+        <div class="action-btn secondary" onclick="alert('Objeye dönüşme modu aktif!')">📦</div>
+        <div class="action-btn" onclick="alert('Özel aksiyon!')">✨</div>
     </div>
 
-    <!-- Harita / Oda Seçim Paneli -->
-    <div id="map-modal">
-        <h2>Oyun Topluluğu - Harita Seçimi</h2>
-        <div class="room-grid">
-            <div class="room-card" onclick="selectRoom('Giriş Holü', 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1200&auto=format&fit=crop')">Giriş Holü</div>
-            <div class="room-card" onclick="selectRoom('Mutfak', 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=1200&auto=format&fit=crop')">Mutfak</div>
-            <div class="room-card" onclick="selectRoom('Oturma Odası', 'https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?q=80&w=1200&auto=format&fit=crop')">Oturma Odası</div>
-            <div class="room-card" onclick="selectRoom('Yatak Odası', 'https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?q=80&w=1200&auto=format&fit=crop')">Yatak Odası</div>
-            <div class="room-card" onclick="selectRoom('Banyo', 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=1200&auto=format&fit=crop')">Banyo</div>
-            <div class="room-card" onclick="selectRoom('Yemek Odası', 'https://images.unsplash.com/photo-1615529162924-f8605388461d?q=80&w=1200&auto=format&fit=crop')">Yemek Odası</div>
-            <div class="room-card" onclick="selectRoom('Merdiven', 'https://images.unsplash.com/photo-1513694203232-719a280e022f?q=80&w=1200&auto=format&fit=crop')">Merdiven</div>
-            <div class="room-card" onclick="selectRoom('Çalışma Odası', 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?q=80&w=1200&auto=format&fit=crop')">Çalışma Odası</div>
-            <div class="room-card" onclick="selectRoom('Garaj', 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?q=80&w=1200&auto=format&fit=crop')">Garaj</div>
-            <div class="room-card" onclick="selectRoom('Bahçe / Kamelya', 'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?q=80&w=1200&auto=format&fit=crop')">Bahçe / Kamelya</div>
-        </div>
-        <button id="close-map" onclick="toggleMap(false)">Oyuna Dön</button>
-    </div>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        // Harita / Oda Değiştirme Mantığı
-        function selectRoom(roomName, imageUrl) {
-            document.getElementById('room-indicator').innerText = roomName;
-            document.getElementById('game-screen').style.backgroundImage = `url('${imageUrl}')`;
-            toggleMap(false);
+        // --- 3D SAHNE VE OYUN MOTORU ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0f172a);
+        scene.fog = new THREE.FogExp2(0x0f172a, 0.03);
+
+        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        document.body.appendChild(renderer.domElement);
+
+        // Işıklandırma
+        const ambientLight = new THREE.AmbientLight(0xffedd5, 0.7);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xfffbeb, 0.8);
+        dirLight.position.set(10, 25, 10);
+        dirLight.castShadow = true;
+        scene.add(dirLight);
+
+        // Zemin
+        const floorGeo = new THREE.PlaneGeometry(35, 35);
+        const floorMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.8 });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.receiveShadow = true;
+        scene.add(floor);
+
+        // --- HARİTA ODALARI (Giriş, Mutfak, Oturma Odası vb.) ---
+        function createRoom(x, z, w, d, floorColor, wallColor) {
+            const rFloor = new THREE.Mesh(
+                new THREE.PlaneGeometry(w - 0.2, d - 0.2),
+                new THREE.MeshStandardMaterial({ color: floorColor, roughness: 0.5 })
+            );
+            rFloor.rotation.x = -Math.PI / 2;
+            rFloor.position.set(x, 0.01, z);
+            scene.add(rFloor);
+
+            const wallMat = new THREE.MeshStandardMaterial({ color: wallColor, roughness: 0.7 });
+            const h = 2.5;
+
+            // Duvarlar
+            const bWall = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.2), wallMat);
+            bWall.position.set(x, h/2, z - d/2);
+            scene.add(bWall);
+
+            const lWall = new THREE.Mesh(new THREE.BoxGeometry(0.2, h, d), wallMat);
+            lWall.position.set(x - w/2, h/2, z);
+            scene.add(lWall);
+
+            const rWall = new THREE.Mesh(new THREE.BoxGeometry(0.2, h, d), wallMat);
+            rWall.position.set(x + w/2, h/2, z);
+            scene.add(rWall);
         }
 
-        function toggleMap(show) {
-            document.getElementById('map-modal').style.display = show ? 'flex' : 'none';
-        }
+        // Harita Planına Uygun Odalar
+        createRoom(-4, -4, 5, 4, 0xd97706, 0x78350f); // Mutfak
+        createRoom(2, -4, 6, 4, 0x3b82f6, 0x1e40af);  // Oturma Odası
+        createRoom(-4, 2, 5, 5, 0x64748b, 0x334155);  // Koridor / Giriş Holü
+        createRoom(3, 2, 5, 5, 0x475569, 0x1e293b);   // Garaj / Oyun Odası
 
-        function transformObject() {
-            alert('📦 Dönüşüm tamamlandı! Oyuncu objeye dönüştü.');
-        }
+        // --- 3. ŞAHIS (TPS) OYUNCU KARAKTERİ ---
+        const playerGroup = new THREE.Group();
+        
+        // Gövde
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0xef4444 });
+        const playerBody = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 1.2, 16), bodyMat);
+        playerBody.position.y = 0.6;
+        playerBody.castShadow = true;
+        playerGroup.add(playerBody);
 
-        function interactAction() {
-            alert('✨ Etkileşim gerçekleştirildi!');
-        }
+        // Kafa (Yönü belli etmesi için)
+        const headMat = new THREE.MeshStandardMaterial({ color: 0xfde047 });
+        const playerHead = new THREE.Mesh(new THREE.SphereGeometry(0.25, 16, 16), headMat);
+        playerHead.position.y = 1.35;
+        playerGroup.add(playerHead);
 
-        // Sol Alt Joystick Dokunma Efekti
+        scene.add(playerGroup);
+        playerGroup.position.set(0, 0, 2); // Başlangıç noktası (Giriş Holü)
+
+        // --- KONTROL SİSTEMİ (Joystick ve Kamera) ---
+        let lon = 0, lat = 20;
+        let isRightDragging = false, prevTouchX = 0, prevTouchY = 0;
+        let joyActive = false, joyTouchId = null;
+        let joyCenterX = 0, joyCenterY = 0;
+        let moveX = 0, moveY = 0;
+
         const joystickArea = document.getElementById('joystick-area');
         const stick = document.getElementById('stick');
-        let isTouching = false;
-        let startX, startY;
 
         joystickArea.addEventListener('touchstart', (e) => {
-            isTouching = true;
-            const touch = e.touches[0];
+            const touch = e.changedTouches[0];
+            joyTouchId = touch.identifier;
             const rect = joystickArea.getBoundingClientRect();
-            startX = rect.left + rect.width / 2;
-            startY = rect.top + rect.height / 2;
+            joyCenterX = rect.left + rect.width / 2;
+            joyCenterY = rect.top + rect.height / 2;
+            joyActive = true;
+        }, { passive: false });
+
+        joystickArea.addEventListener('touchmove', (e) => {
+            if (!joyActive) return;
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                if (touch.identifier === joyTouchId) {
+                    let dx = touch.clientX - joyCenterX;
+                    let dy = touch.clientY - joyCenterY;
+                    let dist = Math.sqrt(dx * dx + dy * dy);
+                    let maxDist = 45;
+                    if (dist > maxDist) {
+                        dx = (dx / dist) * maxDist;
+                        dy = (dy / dist) * maxDist;
+                    }
+                    stick.style.transform = `translate(${dx}px, ${dy}px)`;
+                    moveX = dx / maxDist;
+                    moveY = dy / maxDist;
+                }
+            }
+        }, { passive: false });
+
+        const endJoystick = (e) => {
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === joyTouchId) {
+                    joyActive = false;
+                    joyTouchId = null;
+                    stick.style.transform = `translate(0px, 0px)`;
+                    moveX = 0; moveY = 0;
+                }
+            }
+        };
+        joystickArea.addEventListener('touchend', endJoystick);
+        joystickArea.addEventListener('touchcancel', endJoystick);
+
+        // Sağ Ekran Dokunma (Kamera Çevirme)
+        window.addEventListener('touchstart', (e) => {
+            for (let i = 0; i < e.touches.length; i++) {
+                if (e.touches[i].clientX > window.innerWidth / 3 || e.touches[i].clientY < window.innerHeight - 180) {
+                    isRightDragging = true;
+                    prevTouchX = e.touches[i].clientX;
+                    prevTouchY = e.touches[i].clientY;
+                }
+            }
         });
 
         window.addEventListener('touchmove', (e) => {
-            if (!isTouching) return;
-            const touch = e.touches[0];
-            let dx = touch.clientX - startX;
-            let dy = touch.clientY - startY;
-            let dist = Math.sqrt(dx * dx + dy * dy);
-            let maxDist = 40;
-
-            if (dist > maxDist) {
-                dx = (dx / dist) * maxDist;
-                dy = (dy / dist) * maxDist;
+            if (!isRightDragging) return;
+            for (let i = 0; i < e.touches.length; i++) {
+                if (e.touches[i].clientX > window.innerWidth / 3 || e.touches[i].clientY < window.innerHeight - 180) {
+                    let deltaX = e.touches[i].clientX - prevTouchX;
+                    let deltaY = e.touches[i].clientY - prevTouchY;
+                    lon -= deltaX * 0.4;
+                    lat += deltaY * 0.4;
+                    lat = Math.max(-5, Math.min(60, lat));
+                    prevTouchX = e.touches[i].clientX;
+                    prevTouchY = e.touches[i].clientY;
+                }
             }
-            stick.style.transform = `translate(${dx}px, ${dy}px)`;
+        });
+        window.addEventListener('touchend', () => { isRightDragging = false; });
+
+        // Bilgisayardan Test Desteği (Mouse)
+        let mouseLook = false, mouseX = 0, mouseY = 0;
+        window.addEventListener('mousedown', (e) => { mouseLook = true; mouseX = e.clientX; mouseY = e.clientY; });
+        window.addEventListener('mouseup', () => { mouseLook = false; });
+        window.addEventListener('mousemove', (e) => {
+            if (!mouseLook) return;
+            lon -= (e.clientX - mouseX) * 0.3;
+            lat += (e.clientY - mouseY) * 0.3;
+            lat = Math.max(-5, Math.min(60, lat));
+            mouseX = e.clientX; mouseY = e.clientY;
         });
 
-        window.addEventListener('touchend', () => {
-            isTouching = false;
-            stick.style.transform = `translate(0px, 0px)`;
+        // --- OYUN DÖNGÜSÜ ---
+        const clock = new THREE.Clock();
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+
+            // Karakteri Hareket Ettir
+            if (moveX !== 0 || moveY !== 0) {
+                const speed = 5 * delta;
+                const rad = THREE.MathUtils.degToRad(lon);
+                
+                const moveVectorX = (moveY * Math.sin(rad) + moveX * Math.cos(rad)) * speed;
+                const moveVectorZ = (-moveY * Math.cos(rad) + moveX * Math.sin(rad)) * speed;
+                
+                playerGroup.position.x += moveVectorX;
+                playerGroup.position.z += moveVectorZ;
+
+                // Karakterin baktığı yönü hareket yönüne çevir
+                playerGroup.rotation.y = Math.atan2(moveVectorX, moveVectorZ);
+            }
+
+            // Kamerayı Karakterin Arkasında Tut (TPS Kamera)
+            const camDist = 5;
+            const radLon = THREE.MathUtils.degToRad(lon);
+            const radLat = THREE.MathUtils.degToRad(lat);
+
+            camera.position.x = playerGroup.position.x - camDist * Math.sin(radLon) * Math.cos(radLat);
+            camera.position.y = playerGroup.position.y + 1.5 + camDist * Math.sin(radLat);
+            camera.position.z = playerGroup.position.z - camDist * Math.cos(radLon) * Math.cos(radLat);
+
+            camera.lookAt(playerGroup.position.x, playerGroup.position.y + 0.8, playerGroup.position.z);
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
         });
     </script>
 </body>
 </html>
+ 
