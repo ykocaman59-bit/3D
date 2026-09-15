@@ -3,248 +3,135 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Oyun Topluluğu - Saklambaç Haritası</title>
+    <title>Saklambaç 3D - Oyun</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #0b0f19; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; touch-action: none; }
-        
-        /* Üst Bar */
-        #top-bar { position: absolute; top: 15px; left: 20px; right: 20px; display: flex; justify-content: space-between; align-items: center; z-index: 20; pointer-events: none; }
-        .badge { background: rgba(0, 0, 0, 0.7); color: white; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: bold; border: 1px solid rgba(255,255,255,0.3); }
-        .timer { color: #fbbf24; }
-
-        /* Sol Alt Joystick */
-        #joystick-area { position: absolute; bottom: 35px; left: 35px; width: 130px; height: 130px; background: rgba(255, 255, 255, 0.15); border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.4); z-index: 20; touch-action: none; }
-        #stick { position: absolute; top: 40px; left: 40px; width: 50px; height: 50px; background: rgba(255, 255, 255, 0.9); border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.5); pointer-events: none; }
-
-        /* Sağ Alt Aksiyon Tuşları */
-        #right-buttons { position: absolute; bottom: 35px; right: 35px; display: flex; flex-direction: column; gap: 15px; z-index: 20; }
-        .action-btn { width: 65px; height: 65px; background: #3b82f6; border-radius: 50%; border: 3px solid white; color: white; font-size: 24px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.4); cursor: pointer; }
-        .action-btn.secondary { background: #1e293b; font-size: 20px; }
-
-        #info-text { position: absolute; top: 65px; width: 100%; text-align: center; color: #94a3b8; font-size: 12px; z-index: 20; pointer-events: none; }
+        body { margin: 0; overflow: hidden; background: #0b0f19; font-family: sans-serif; touch-action: none; }
+        #ui { position: absolute; top: 15px; left: 15px; color: white; background: rgba(0,0,0,0.7); padding: 8px 15px; border-radius: 10px; font-weight: bold; z-index: 10; pointer-events: none; }
+        #joystick { position: absolute; bottom: 30px; left: 30px; width: 120px; height: 120px; background: rgba(255,255,255,0.15); border-radius: 50%; border: 2px solid rgba(255,255,255,0.4); z-index: 10; }
+        #stick { position: absolute; top: 35px; left: 35px; width: 50px; height: 50px; background: white; border-radius: 50%; pointer-events: none; }
     </style>
 </head>
 <body>
-
-    <div id="top-bar">
-        <div class="badge">👤 Saklan: 16/16</div>
-        <div class="badge timer">⏱️ 03:00</div>
-    </div>
-    <div id="info-text">Sol alttaki joystick ile karakteri hareket ettir, sağ ekrana dokunarak etrafa bak!</div>
-
-    <div id="joystick-area">
-        <div id="stick"></div>
-    </div>
-
-    <div id="right-buttons">
-        <div class="action-btn secondary" onclick="alert('Objeye dönüşme modu aktif!')">📦</div>
-        <div class="action-btn" onclick="alert('Özel aksiyon!')">✨</div>
-    </div>
+    <div id="ui">🎮 3D Karakter ve Hareket Testi</div>
+    <div id="joystick"><div id="stick"></div></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        // --- 3D SAHNE VE OYUN MOTORU ---
+        // Sahne, Kamera, Renderer
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x0f172a);
-        scene.fog = new THREE.FogExp2(0x0f172a, 0.03);
+        scene.background = new THREE.Color(0x1e293b);
 
-        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = true;
         document.body.appendChild(renderer.domElement);
 
-        // Işıklandırma
-        const ambientLight = new THREE.AmbientLight(0xffedd5, 0.7);
-        scene.add(ambientLight);
-
-        const dirLight = new THREE.DirectionalLight(0xfffbeb, 0.8);
-        dirLight.position.set(10, 25, 10);
-        dirLight.castShadow = true;
+        // Işık
+        scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(10, 20, 10);
         scene.add(dirLight);
 
-        // Zemin
-        const floorGeo = new THREE.PlaneGeometry(35, 35);
-        const floorMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.8 });
-        const floor = new THREE.Mesh(floorGeo, floorMat);
+        // Zemin (Odalar)
+        const floor = new THREE.Mesh(
+            new THREE.PlaneGeometry(30, 30),
+            new THREE.MeshStandardMaterial({ color: 0x334155 })
+        );
         floor.rotation.x = -Math.PI / 2;
-        floor.receiveShadow = true;
         scene.add(floor);
 
-        // --- HARİTA ODALARI (Giriş, Mutfak, Oturma Odası vb.) ---
-        function createRoom(x, z, w, d, floorColor, wallColor) {
-            const rFloor = new THREE.Mesh(
-                new THREE.PlaneGeometry(w - 0.2, d - 0.2),
-                new THREE.MeshStandardMaterial({ color: floorColor, roughness: 0.5 })
-            );
-            rFloor.rotation.x = -Math.PI / 2;
-            rFloor.position.set(x, 0.01, z);
-            scene.add(rFloor);
-
-            const wallMat = new THREE.MeshStandardMaterial({ color: wallColor, roughness: 0.7 });
-            const h = 2.5;
-
-            // Duvarlar
-            const bWall = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.2), wallMat);
-            bWall.position.set(x, h/2, z - d/2);
-            scene.add(bWall);
-
-            const lWall = new THREE.Mesh(new THREE.BoxGeometry(0.2, h, d), wallMat);
-            lWall.position.set(x - w/2, h/2, z);
-            scene.add(lWall);
-
-            const rWall = new THREE.Mesh(new THREE.BoxGeometry(0.2, h, d), wallMat);
-            rWall.position.set(x + w/2, h/2, z);
-            scene.add(rWall);
+        // Referans Kutuları (Odaları ve duvarları hissettirmek için)
+        const boxMat = new THREE.MeshStandardMaterial({ color: 0x475569 });
+        for(let i = -10; i <= 10; i += 5) {
+            const wall = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), boxMat);
+            wall.position.set(i, 1, -10);
+            scene.add(wall);
         }
 
-        // Harita Planına Uygun Odalar
-        createRoom(-4, -4, 5, 4, 0xd97706, 0x78350f); // Mutfak
-        createRoom(2, -4, 6, 4, 0x3b82f6, 0x1e40af);  // Oturma Odası
-        createRoom(-4, 2, 5, 5, 0x64748b, 0x334155);  // Koridor / Giriş Holü
-        createRoom(3, 2, 5, 5, 0x475569, 0x1e293b);   // Garaj / Oyun Odası
-
-        // --- 3. ŞAHIS (TPS) OYUNCU KARAKTERİ ---
-        const playerGroup = new THREE.Group();
+        // 3D Karakter (Silindir Gövde + Kafa)
+        const player = new THREE.Group();
         
-        // Gövde
-        const bodyMat = new THREE.MeshStandardMaterial({ color: 0xef4444 });
-        const playerBody = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 1.2, 16), bodyMat);
-        playerBody.position.y = 0.6;
-        playerBody.castShadow = true;
-        playerGroup.add(playerBody);
+        const body = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.3, 0.3, 1.2, 16),
+            new THREE.MeshStandardMaterial({ color: 0xef4444 })
+        );
+        body.position.y = 0.6;
+        player.add(body);
 
-        // Kafa (Yönü belli etmesi için)
-        const headMat = new THREE.MeshStandardMaterial({ color: 0xfde047 });
-        const playerHead = new THREE.Mesh(new THREE.SphereGeometry(0.25, 16, 16), headMat);
-        playerHead.position.y = 1.35;
-        playerGroup.add(playerHead);
+        const head = new THREE.Mesh(
+            new THREE.SphereGeometry(0.25, 16, 16),
+            new THREE.MeshStandardMaterial({ color: 0xfde047 })
+        );
+        head.position.y = 1.35;
+        player.add(head);
 
-        scene.add(playerGroup);
-        playerGroup.position.set(0, 0, 2); // Başlangıç noktası (Giriş Holü)
+        scene.add(player);
+        player.position.set(0, 0, 0);
 
-        // --- KONTROL SİSTEMİ (Joystick ve Kamera) ---
-        let lon = 0, lat = 20;
-        let isRightDragging = false, prevTouchX = 0, prevTouchY = 0;
-        let joyActive = false, joyTouchId = null;
-        let joyCenterX = 0, joyCenterY = 0;
-        let moveX = 0, moveY = 0;
-
-        const joystickArea = document.getElementById('joystick-area');
+        // Joystick Mantığı
+        let moveX = 0, moveY = 0, isJoyActive = false, touchId = null;
+        let startX = 0, startY = 0;
+        const joystick = document.getElementById('joystick');
         const stick = document.getElementById('stick');
 
-        joystickArea.addEventListener('touchstart', (e) => {
-            const touch = e.changedTouches[0];
-            joyTouchId = touch.identifier;
-            const rect = joystickArea.getBoundingClientRect();
-            joyCenterX = rect.left + rect.width / 2;
-            joyCenterY = rect.top + rect.height / 2;
-            joyActive = true;
-        }, { passive: false });
+        joystick.addEventListener('touchstart', (e) => {
+            const t = e.changedTouches[0];
+            touchId = t.identifier;
+            const r = joystick.getBoundingClientRect();
+            startX = r.left + r.width / 2;
+            startY = r.top + r.height / 2;
+            isJoyActive = true;
+        });
 
-        joystickArea.addEventListener('touchmove', (e) => {
-            if (!joyActive) return;
-            for (let i = 0; i < e.changedTouches.length; i++) {
-                const touch = e.changedTouches[i];
-                if (touch.identifier === joyTouchId) {
-                    let dx = touch.clientX - joyCenterX;
-                    let dy = touch.clientY - joyCenterY;
+        window.addEventListener('touchmove', (e) => {
+            if (!isJoyActive) return;
+            for (let t of e.changedTouches) {
+                if (t.identifier === touchId) {
+                    let dx = t.clientX - startX;
+                    let dy = t.clientY - startY;
                     let dist = Math.sqrt(dx * dx + dy * dy);
-                    let maxDist = 45;
-                    if (dist > maxDist) {
-                        dx = (dx / dist) * maxDist;
-                        dy = (dy / dist) * maxDist;
+                    let maxD = 40;
+                    if (dist > maxD) {
+                        dx = (dx / dist) * maxD;
+                        dy = (dy / dist) * maxD;
                     }
                     stick.style.transform = `translate(${dx}px, ${dy}px)`;
-                    moveX = dx / maxDist;
-                    moveY = dy / maxDist;
+                    moveX = dx / maxD;
+                    moveY = dy / maxD;
                 }
             }
-        }, { passive: false });
+        });
 
-        const endJoystick = (e) => {
-            for (let i = 0; i < e.changedTouches.length; i++) {
-                if (e.changedTouches[i].identifier === joyTouchId) {
-                    joyActive = false;
-                    joyTouchId = null;
+        const endJoy = (e) => {
+            for (let t of e.changedTouches) {
+                if (t.identifier === touchId) {
+                    isJoyActive = false;
                     stick.style.transform = `translate(0px, 0px)`;
                     moveX = 0; moveY = 0;
                 }
             }
         };
-        joystickArea.addEventListener('touchend', endJoystick);
-        joystickArea.addEventListener('touchcancel', endJoystick);
+        joystick.addEventListener('touchend', endJoy);
+        joystick.addEventListener('touchcancel', endJoy);
 
-        // Sağ Ekran Dokunma (Kamera Çevirme)
-        window.addEventListener('touchstart', (e) => {
-            for (let i = 0; i < e.touches.length; i++) {
-                if (e.touches[i].clientX > window.innerWidth / 3 || e.touches[i].clientY < window.innerHeight - 180) {
-                    isRightDragging = true;
-                    prevTouchX = e.touches[i].clientX;
-                    prevTouchY = e.touches[i].clientY;
-                }
-            }
-        });
-
-        window.addEventListener('touchmove', (e) => {
-            if (!isRightDragging) return;
-            for (let i = 0; i < e.touches.length; i++) {
-                if (e.touches[i].clientX > window.innerWidth / 3 || e.touches[i].clientY < window.innerHeight - 180) {
-                    let deltaX = e.touches[i].clientX - prevTouchX;
-                    let deltaY = e.touches[i].clientY - prevTouchY;
-                    lon -= deltaX * 0.4;
-                    lat += deltaY * 0.4;
-                    lat = Math.max(-5, Math.min(60, lat));
-                    prevTouchX = e.touches[i].clientX;
-                    prevTouchY = e.touches[i].clientY;
-                }
-            }
-        });
-        window.addEventListener('touchend', () => { isRightDragging = false; });
-
-        // Bilgisayardan Test Desteği (Mouse)
-        let mouseLook = false, mouseX = 0, mouseY = 0;
-        window.addEventListener('mousedown', (e) => { mouseLook = true; mouseX = e.clientX; mouseY = e.clientY; });
-        window.addEventListener('mouseup', () => { mouseLook = false; });
-        window.addEventListener('mousemove', (e) => {
-            if (!mouseLook) return;
-            lon -= (e.clientX - mouseX) * 0.3;
-            lat += (e.clientY - mouseY) * 0.3;
-            lat = Math.max(-5, Math.min(60, lat));
-            mouseX = e.clientX; mouseY = e.clientY;
-        });
-
-        // --- OYUN DÖNGÜSÜ ---
+        // Oyun Döngüsü
         const clock = new THREE.Clock();
         function animate() {
             requestAnimationFrame(animate);
             const delta = clock.getDelta();
 
-            // Karakteri Hareket Ettir
             if (moveX !== 0 || moveY !== 0) {
-                const speed = 5 * delta;
-                const rad = THREE.MathUtils.degToRad(lon);
-                
-                const moveVectorX = (moveY * Math.sin(rad) + moveX * Math.cos(rad)) * speed;
-                const moveVectorZ = (-moveY * Math.cos(rad) + moveX * Math.sin(rad)) * speed;
-                
-                playerGroup.position.x += moveVectorX;
-                playerGroup.position.z += moveVectorZ;
-
-                // Karakterin baktığı yönü hareket yönüne çevir
-                playerGroup.rotation.y = Math.atan2(moveVectorX, moveVectorZ);
+                const speed = 6 * delta;
+                player.position.x += moveX * speed;
+                player.position.z += moveY * speed;
+                player.rotation.y = Math.atan2(moveX, moveY);
             }
 
-            // Kamerayı Karakterin Arkasında Tut (TPS Kamera)
-            const camDist = 5;
-            const radLon = THREE.MathUtils.degToRad(lon);
-            const radLat = THREE.MathUtils.degToRad(lat);
-
-            camera.position.x = playerGroup.position.x - camDist * Math.sin(radLon) * Math.cos(radLat);
-            camera.position.y = playerGroup.position.y + 1.5 + camDist * Math.sin(radLat);
-            camera.position.z = playerGroup.position.z - camDist * Math.cos(radLon) * Math.cos(radLat);
-
-            camera.lookAt(playerGroup.position.x, playerGroup.position.y + 0.8, playerGroup.position.z);
+            // TPS Kamera (Arkadan Takip)
+            camera.position.x = player.position.x;
+            camera.position.y = player.position.y + 3.5;
+            camera.position.z = player.position.z + 5;
+            camera.lookAt(player.position.x, player.position.y + 1, player.position.z);
 
             renderer.render(scene, camera);
         }
@@ -258,4 +145,3 @@
     </script>
 </body>
 </html>
- 
