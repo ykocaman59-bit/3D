@@ -44,7 +44,7 @@ offset_bottom=65.0
 text="Süre: 90"
 theme_override_font_sizes/font_size=20
 
-[node name="Mobile"
+[node name="Mobile" type="Control" parent="."]
 script=ExtResource("2")
 [node name="Controls" type="Control" parent="Mobile"]
 layout_mode=3
