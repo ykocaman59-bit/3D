@@ -7,6 +7,18 @@ var start=Vector2.ZERO
 var mv=Vector2.ZERO
 var last=Vector2.ZERO
 
+func _ready():
+    var hide_btn = get_node_or_null("Controls/Hide")
+    var host_btn = get_node_or_null("Controls/Host")
+    var join_btn = get_node_or_null("Controls/Join")
+    var run_btn = get_node_or_null("Controls/Run")
+    if hide_btn: hide_btn.pressed.connect(_on_hide_pressed)
+    if host_btn: host_btn.pressed.connect(_on_host_pressed)
+    if join_btn: join_btn.pressed.connect(_on_join_pressed)
+    if run_btn:
+        run_btn.button_down.connect(_on_run_down)
+        run_btn.button_up.connect(_on_run_up)
+
 func _process(_d):
     if not player:
         player=get_node_or_null("../Player_%s" % multiplayer.get_unique_id())
